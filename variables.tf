@@ -1,36 +1,40 @@
-variable "region" {
-  description = "The AWS region where your primary application resides."
+variable "hcp_organization" {
   type        = string
-  default     = "us-east-1"
+  default     = "apoorva-murthy-org"
+  description = "Your exact HCP Terraform Organization Name."
 }
 
 variable "app_name" {
-  description = "The target application prefix name (e.g., feedback-app)."
   type        = string
+  description = "The unique prefix name of the application this add-on belongs to (e.g., feedback-app)."
 }
 
-variable "target_vpc_id" {
-  description = "The ID of the primary application VPC."
+variable "region" {
   type        = string
+  default     = "us-east-1"
+  description = "The target AWS region for deployment."
 }
 
-variable "target_subnet_id" {
-  description = "The exact public subnet ID where the main Fargate service runs."
+variable "maintenance_mode" {
   type        = string
+  default     = "false"
+  description = "Operational toggle to trigger an immediate Day 2 app maintenance lockout state."
 }
 
-variable "target_security_group_id" {
-  description = "The primary firewall security group ID to bind for network line-of-sight."
-  type        = string
+# ==============================================================================
+# NATIVE PORTAL AUTOMATION: Declarations required by the Developer Portal Beta
+# ==============================================================================
+variable "developer_portal_application" {
+  type    = any
+  default = null
 }
 
-variable "target_ecs_cluster_name" {
-  description = "The target execution cluster housing the Fargate system engine."
-  type        = string
+variable "developer_portal_add_on_definition" {
+  type    = any
+  default = null
 }
 
-variable "ecs_service_name_string" {
-  description = "The runtime orchestrator supervising the application availability state."
-  type        = string
-  default     = "feedback-app-service"
+variable "developer_portal_add_on" {
+  type    = any
+  default = null
 }
