@@ -4,12 +4,12 @@ variable "hcp_organization" {
   description = "Your exact HCP Terraform Organization Name."
 }
 
-variable "app_name" {
+variable "target_app_name" {
   type        = string
-  description = "The unique prefix name of the application this add-on belongs to (e.g., feedback-app)."
+  description = "The unique app_name of the Application this add-on belongs to (e.g., feedback-app)."
 }
 
-variable "region" {
+variable "aws_region" {
   type        = string
   default     = "us-east-1"
   description = "The target AWS region for deployment."

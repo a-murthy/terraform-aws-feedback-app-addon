@@ -17,32 +17,32 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  region = var.aws_region
 }
 
 # ==============================================================================
-# 🔍 REFERENCE-REPLICATED WORKSPACE DISCOVERY MATRIX
+# REFERENCE-REPLICATED WORKSPACE DISCOVERY MATRIX
 # ==============================================================================
 locals {
-  resolved_app_name = var.developer_portal_application != null ? var.developer_portal_application : var.app_name
+  resolved_app_name = var.developer_portal_application != null ? var.developer_portal_application : var.target_app_name
 }
 
+# 1. DYNAMIC DISCOVERY: Pinpoints the active application workspace
 data "tfe_workspace" "core_ws" {
   organization = var.hcp_organization
   
-  # Tracks your feedback-app configuration parameters precisely
-  name = var.developer_portal_application != null ? var.developer_portal_application : (
-    var.app_name == "feedback-app" ? "customer-feedback-app-production" : var.app_name
-  )
+  # Follows your flawless reference app mapping pattern exactly
+  name = var.developer_portal_application != null ? var.developer_portal_application : var.target_app_name
 }
 
+# 2. STATE LOOKUP: Automatically grabs structural parameters from your application workspace
 data "tfe_outputs" "core" {
   organization = var.hcp_organization
   workspace    = data.tfe_workspace.core_ws.name
 }
 
 # ==============================================================================
-# 📦 AUTOMATED BUSINESS LOGIC COMPILATION
+# AUTOMATED BUSINESS LOGIC COMPILATION
 # ==============================================================================
 data "archive_file" "lambda_zip" {
   type        = "zip"
@@ -51,7 +51,7 @@ data "archive_file" "lambda_zip" {
 }
 
 # ==============================================================================
-# 🔐 IMMUTABLE SANDBOX ENVIRONMENT ROLE LOOKUP (Bypasses Service Principals)
+# IMMUTABLE SANDBOX ENVIRONMENT ROLE LOOKUP (Bypasses Service Principals)
 # ==============================================================================
 # Uses the standard admin-approved execution role pre-built inside your sandbox
 data "aws_iam_role" "sandbox_lambda_role" {
@@ -59,7 +59,7 @@ data "aws_iam_role" "sandbox_lambda_role" {
 }
 
 # ==============================================================================
-# 🤖 COMPUTE ENGINE (Runs in Native Space for Internet Access to Amazon Comprehend)
+# COMPUTE ENGINE (Runs in Native Space for Internet Access to Amazon Comprehend)
 # ==============================================================================
 resource "aws_lambda_function" "ai_sentiment_processor" {
   filename         = data.archive_file.lambda_zip.output_path
@@ -85,7 +85,7 @@ resource "aws_lambda_function_url" "ai_endpoint" {
 }
 
 # ==============================================================================
-# 🎛️ AUTOMATED DYNAMIC BACK-INJECTION (Matches Reference App Pattern)
+# AUTOMATED DYNAMIC BACK-INJECTION (Matches Reference App Pattern)
 # ==============================================================================
 resource "tfe_variable" "inject_ai_url" {
   key          = "ai_endpoint_url"
@@ -113,7 +113,7 @@ resource "tfe_workspace_run" "trigger_app_deploy" {
 }
 
 # ==============================================================================
-# 🛠 VALID DAY 2 OPERATIONS ENGINE (Valid HCL Resource Block)
+# VALID DAY 2 OPERATIONS ENGINE (Valid HCL Resource Block)
 # ==============================================================================
 resource "aws_lambda_invocation" "platform_maintenance_lockdown" {
   count         = var.maintenance_mode == "true" ? 1 : 0
