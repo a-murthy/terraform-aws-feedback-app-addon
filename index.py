@@ -24,22 +24,27 @@ def handler(event, context):
     print("--- DUAL-TIER DURABLE ADD-ON INVOCATION DETECTED ---")
     print(f"Incoming Event Payload: {json.dumps(event)}")
     
+    # 🟢 FIX: Extract the deterministic HTTP method from the AWS proxy wrapper
+    http_method = event.get('requestContext', {}).get('http', {}).get('method', 'POST')
+    if 'httpMethod' in event:
+        http_method = event['httpMethod']
+    
     payload_data = {}
-    if isinstance(event, dict) and 'body' in event and event['body']:
+    if isinstance(event, dict) and event.get('body'):
         try:
             payload_data = json.loads(event['body'])
         except Exception:
             pass
     elif isinstance(event, dict):
-        payload_data = event
+        # Only unpack root dictionary if this isn't an AWS Proxy Event wrapper
+        if 'requestContext' not in event:
+            payload_data = event
 
     # ==============================================================================
-    # 🚨 TRACK A: DAY 2 PLATFORM MAINTENANCE HOOK (Action / Invocation Parse)
+    # 🚨 TRACK A: DAY 2 PLATFORM MAINTENANCE HOOK (HCP UI Button Intercepts)
     # ==============================================================================
     if "maintenance_mode" in payload_data:
-        flag = str(payload_data.get("maintenance_mode", "false")).lower()
-        
-        # 🟢 DURABLE RECORDING: Overwrites parameter out-of-band to survive container recycling
+        flag = str(payload_data.get("maintenance_mode", "false")).lower().strip()
         ssm.put_parameter(Name=PARAMETER_NAME, Value=flag, Type='String', Overwrite=True)
         is_active = (flag == 'true')
         
@@ -57,15 +62,10 @@ def handler(event, context):
     # ==============================================================================
     # 🟢 TRACK B: IN-BAND OPERATIONS ROUTER (Flask Container Traffic Parsing)
     # ==============================================================================
-    is_status_query = True
-    text_to_analyze = ""
     
-    if "text" in payload_data:
-        text_to_analyze = payload_data["text"]
-        is_status_query = False
-
-    # 1. LIVE APP LAYOUT CHECK (Flask route queries via HTTP GET)
-    if is_status_query:
+    # 1. LIVE APP LAYOUT CHECK (Flask route queries via HTTP GET on page load)
+    # Uses clean HTTP isolation instead of brittle string sniffing in dictionaries
+    if http_method == 'GET':
         current_lockout_state = get_maintenance_state()
         print(f"Flask Dynamic Pull. Fetching persistent key: {current_lockout_state}")
         return {
@@ -77,6 +77,14 @@ def handler(event, context):
         }
 
     # 2. LIVE SENTIMENT ANALYSIS ENGINE (Flask submissions via HTTP POST)
+    text_to_analyze = payload_data.get("text", "").strip()
+    if not text_to_analyze:
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'status': 'SUCCESS', 'sentiment': '🟡 NEUTRAL'})
+        }
+
     print(f"Executing NLP Sentiment analysis for payload string: '{text_to_analyze}'")
     try:
         comprehend_response = comprehend.detect_sentiment(Text=text_to_analyze, LanguageCode='en')
@@ -98,3 +106,4 @@ def handler(event, context):
             'headers': {'Content-Type': 'application/json'},
             'body': json.dumps({'status': 'FALLBACK', 'sentiment': '🟡 NEUTRAL'})
         }
+
